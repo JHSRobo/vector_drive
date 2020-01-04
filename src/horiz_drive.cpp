@@ -181,7 +181,7 @@ int main(int argc, char **argv)
     pub = n.advertise<vector_drive::thrusterPercents>("rov/cmd_horizontal_vdrive", 1);
 
     //ROS subscriber to get vectors from the joystick control input
-    sub = n.subscribe("rov/cmd_vel", 1, commandVectorCallback);
+    sub = n.subscribe("rov/eff_vel", 1, commandVectorCallback);
 
 
     ros::spin();
