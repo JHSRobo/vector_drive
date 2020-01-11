@@ -8,7 +8,7 @@
 
 
 ros::Publisher pub;  //!< Publishes thrusterPercent (-1000 to 1000) message for thruster 5, 6, 7, and 8
-ros::Subscriber sub; //!< Subscribes to rov/cmd_vel in order to get command/control vectors for vector drive algorithm   
+ros::Subscriber sub; //!< Subscribes to rov/cmd_vel in order to get command/control vectors for vector drive algorithm
 
 vector_drive::thrusterPercents thrustPercents; //!< Message being published by pub
 
@@ -50,7 +50,7 @@ T map(T input, T inMin, T inMax, T outMin, T outMax){
 }
 
 /**
-* @breif updates control percents, updates thruster percents, and publishes the updates thruster percents to the rov/cmd_horizontal_vdrive topic. Currently no vector math is needed due to primitive vertical control system. Control percents are directly multiplied by 1000 for thrusters percents. 
+* @breif updates control percents, updates thruster percents, and publishes the updates thruster percents to the rov/cmd_horizontal_vdrive topic. Currently no vector math is needed due to primitive vertical control system. Control percents are directly multiplied by 1000 for thrusters percents.
 * @param[in] vel vel Input from the joystick, ros_control_interface and ROS Control PID algorithms
 */
 
@@ -59,11 +59,16 @@ void commandVectorCallback(const geometry_msgs::Twist::ConstPtr& vel)
     //only deals with values pertaining to vertical "vector" drive
     //vertical value
     double linearZ = vel->linear.z;
+    double angularY = vel->angular.y;
 
-    double T5 = linearZ*1000;
-    double T6 = linearZ*1000;
-    double T7 = linearZ*1000;
-    double T8 = linearZ*1000;
+    // +- angular y corresponds to +- y torque in sim
+    // opposite of (sim) imu's +- y angular velocity and orientation
+    double T5 = (linearZ - angularY) * 1000;
+    constrain(T5, -1000.0, 1000.0);
+    double T7 = T5;
+    double T6 = (linearZ + angularY) * 1000;
+    constrain(T6, -1000.0, 1000.0);
+    double T8 = T6;
 
     thrustPercents.t1 = T5;
     thrustPercents.t2 = T6;
@@ -86,7 +91,7 @@ int main(int argc, char **argv)
     pub = n.advertise<vector_drive::thrusterPercents>("rov/cmd_vertical_vdrive", 1);
 
     //ROS subscriber to get vectors from the joystick control input
-    sub = n.subscribe("rov/cmd_vel", 1, commandVectorCallback);
+    sub = n.subscribe("rov/eff_vel", 1, commandVectorCallback);
 
 
     ros::spin();
